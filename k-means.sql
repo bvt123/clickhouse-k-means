@@ -1,6 +1,5 @@
 /*
- данных много, они лежат на разных серверах (YH может быть Distributed)
- в результате мы должны получить массив индексов выявленных кластеров
+
  */
 
 -- some functions
@@ -13,11 +12,10 @@ insert into YH select number, [toInt32(number), toInt32(pow(number-30,2) + (rand
 alter table YH delete where intDiv(i,10) in [3,4,12,13,17,18];
 
 -- Centroids
-drop table WCR; create table WCR ( ts DateTime, j Int32, C Array(Int32), P Array(Array(Int32)) ) engine = Memory;
+drop table WCR; create table WCR ( ts DateTime, j Int32, C Array(Int32), P Array(UInt32) ) engine = Memory;
 insert into WCR select now(), rowNumberInAllBlocks()+1, Y  , [] from YH limit 40,1;
---insert into WCR values (toDateTime(0),1,(0,0),[]),(0,2,(50,0),[]);
 
--- random centroids for k-means++
+-- random centroids initialization
 insert into WCR
 select now(), (select j from WCR order by ts desc limit 1)+1 as j, y, []
 from ( select y,
@@ -33,9 +31,10 @@ order by cum
 limit 1
 ;
 
-insert into WCR;
+-- k-means. recalculate centroids and make groups of PK of original data. should run several times to get better approximations
+insert into WCR
 select now(), j, ArrAvg(Y) as C, groupArray(i)
-from ( with  arrayMap(j->(j.1,ArrL2Distance(j.2,Y)),WCR) as D
+from ( with  arrayMap(j->(j.1, ArrL2Distance(j.2,Y)),WCR) as D
        select Y, i, arrayReduce('argMin',D.1,D.2) as j  from YH
        global cross join (select groupArray((j,C)) as WCR from (select j,C from WCR order by ts desc limit 1 by j) ) as W
      )
