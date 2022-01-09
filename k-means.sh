@@ -26,6 +26,7 @@ limit 1
 "
 done
 
+# press ^C when finish
 while true 
 do
  

@@ -1,6 +1,3 @@
-/*
-
- */
 
 -- some functions
 drop function ArrL2Distance; create function ArrL2Distance as (A,B) -> arraySum(a,b->(a-b)*(a-b),A,B);
