@@ -1,5 +1,5 @@
 
--- some functions
+-- useful functions
 drop function ArrL2Distance; create function ArrL2Distance as (A,B) -> arraySum(a,b->(a-b)*(a-b),A,B);
 drop function ArrAvg;        create function ArrAvg        as (A)   -> arrayMap(i->i/count(),sumMap(arrayEnumerate(A),A).2);
 
@@ -9,10 +9,10 @@ insert into YH select number, [toInt32(number), toInt32(pow(number-30,2) + (rand
 alter table YH delete where intDiv(i,10) in [3,4,12,13,17,18];
 
 -- Centroids
-drop table WCR; create table WCR ( ts DateTime, j Int32, C Array(Int32), P Array(UInt32) ) engine = Memory;
+drop table WCR; create table WCR ( ts DateTime, j Int32, C Array(Int32), P Array(UInt32) ) engine = MergeTree order by ts;
 insert into WCR select now(), rowNumberInAllBlocks()+1, Y  , [] from YH limit 40,1;
 
--- random centroids initialization
+-- random centroids initialization as k-means++ algo
 insert into WCR
 select now(), (select j from WCR order by ts desc limit 1)+1 as j, y, []
 from ( select y,
