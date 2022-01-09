@@ -7,7 +7,7 @@
 drop function ArrL2Distance; create function ArrL2Distance as (A,B) -> arraySum(a,b->(a-b)*(a-b),A,B);
 drop function ArrAvg;        create function ArrAvg        as (A)   -> arrayMap(i->i/count(),sumMap(arrayEnumerate(A),A).2);
 
--- data
+-- test data
 drop table YH; create table YH (i UInt32, Y Array(Int32)) engine = Memory;
 insert into YH select number, [toInt32(number), toInt32(pow(number-30,2) + (rand()%3-1) * rand() % 20)] from numbers(200);
 alter table YH delete where intDiv(i,10) in [3,4,12,13,17,18];
