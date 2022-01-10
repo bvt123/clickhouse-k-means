@@ -27,11 +27,6 @@ where total*r < cum
 order by cum
 limit 1;
 
-
-WITH (SELECT max(ts) FROM WCR) as max_ts
-
-FROM WCR WHERE ts = max_ts
-
 -- k-means. recalculate centroids and produce groups of PK of original data. should run several times to get better approximations
 INSERT INTO WCR SELECT
     now(),
