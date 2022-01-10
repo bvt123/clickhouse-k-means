@@ -1,4 +1,4 @@
-#k-means++ for Clickhouse SQL
+# k-means++ for Clickhouse SQL
 
 ![4clusters](https://github.com/bvt123/clickhouse-k-means/raw/main/4clusters.png?raw=true)
 
