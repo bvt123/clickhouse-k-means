@@ -15,7 +15,7 @@ select now(), (select j from WCR order by ts desc limit 1)+1 as j, y, []
 from ( select y,
          sum(d) over () as total,
          sum(d) over (rows between unbounded preceding and current row ) as cum
-         from (  select argMin(Y, ArrL2Distance(Y,C) as dx2) as y, min(dx2) as d
+         from (  select argMin(Y, L2Distance(Y,C) as dx2) as y, min(dx2) as d
                  from YH, (select * from WCR order by ts desc limit 1 by j) as WCR
                  where Y not in (select C from WCR)
                  group by Y)) as t1,
@@ -32,10 +32,11 @@ do
  
 ch  "
 insert into WCR
-select now(), j, ArrAvg(Y) as C, groupArray(i)
-from ( with  arrayMap(j->(j.1, ArrL2Distance(j.2,Y)),WCR) as D
-       select Y, i, arrayReduce('argMin',D.1,D.2) as j  from YH
-       global cross join (select groupArray((j,C)) as WCR from (select j,C from WCR order by ts desc limit 1 by j) ) as W
+select now(), j, tuple(COLUMNS('tupleElement') APPLY avg) as C, groupArray(i)
+from ( with  arrayMap(j->(j.1, L2Distance(j.2,Y)),jC) as D,
+             (SELECT max(ts) FROM WCR) as max_ts
+       select untuple(Y), i, arrayReduce('argMin',D.1,D.2) as j  from YH
+       global cross join (select arrayZip(groupArray(j), groupArray(C)) as jC from (select j,C from WCR WHERE ts = max_ts) ) as W
      )
 group by j
 "
