@@ -1,7 +1,7 @@
 # k-means++ for Clickhouse SQL
 
 
-! [4clusters](https://github.com/bvt123/clickhouse-k-means/raw/main/4clusters.png?raw=true)
+![4clusters](https://github.com/bvt123/clickhouse-k-means/raw/main/4clusters.png?raw=true)
 
  Делим исходные данные на кластеры, опираясь на поняние "близости" в каком-то многомерном евклидовом пространстве
 
