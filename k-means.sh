@@ -31,14 +31,21 @@ while true
 do
  
 ch  "
-insert into WCR
-select now(), j, tuple(COLUMNS('tupleElement') APPLY avg) as C, groupArray(i)
-from ( with  arrayMap(j->(j.1, L2Distance(j.2,Y)),jC) as D,
-             (SELECT max(ts) FROM WCR) as max_ts
-       select untuple(Y), i, arrayReduce('argMin',D.1,D.2) as j  from YH
-       global cross join (select arrayZip(groupArray(j), groupArray(C)) as jC from (select j,C from WCR WHERE ts = max_ts) ) as W
-     )
-group by j
+INSERT INTO WCR SELECT
+    now(),
+    j,
+    tuple(COLUMNS('tupleElement') APPLY avg) AS C,
+    groupArray(i)
+FROM
+(
+    WITH ( SELECT  groupArray(j), groupArray(C) FROM WCR  WHERE ts = ( SELECT max(ts) FROM WCR) ) AS jC
+    SELECT
+        untuple(Y),
+        i,
+        arraySort((j, C) -> L2Distance(C, Y), jC.1, jC.2)[1] AS j
+    FROM YH
+)
+GROUP BY j
 "
 
 ch "select C from WCR order by ts desc limit 1 by j"

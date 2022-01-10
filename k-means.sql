@@ -33,14 +33,22 @@ WITH (SELECT max(ts) FROM WCR) as max_ts
 FROM WCR WHERE ts = max_ts
 
 -- k-means. recalculate centroids and produce groups of PK of original data. should run several times to get better approximations
-insert into WCR
-select now(), j, tuple(COLUMNS('tupleElement') APPLY avg) as C, groupArray(i)
-from ( with  arrayMap(j->(j.1, L2Distance(j.2,Y)),jC) as D,
-             (SELECT max(ts) FROM WCR) as max_ts
-       select untuple(Y), i, arrayReduce('argMin',D.1,D.2) as j  from YH
-       global cross join (select arrayZip(groupArray(j), groupArray(C)) as jC from (select j,C from WCR WHERE ts = max_ts) ) as W
-     )
-group by j;
+INSERT INTO WCR SELECT
+    now(),
+    j,
+    tuple(COLUMNS('tupleElement') APPLY avg) AS C,
+    groupArray(i)
+FROM
+(
+    WITH ( SELECT  groupArray(j), groupArray(C) FROM WCR  WHERE ts = ( SELECT max(ts) FROM WCR) ) AS jC
+    SELECT
+        untuple(Y),
+        i,
+        arraySort((j, C) -> L2Distance(C, Y), jC.1, jC.2)[1] AS j
+    FROM YH
+)
+GROUP BY j
+;
 /*
  для тех кто офигевает от синтаксиса КХ, поясняю:
  - untuple(Y) - развертывает тапл в простой список, как будто это отдельные столбцы.  Имена придумываются и содержат слово tupleElement
@@ -66,5 +74,3 @@ union all
 select Y.1 as x, null p1, null p2, null p3, null p4, Y.2 p5 from YH where i in getWCR(5))
 order by x
 ;
-
-
