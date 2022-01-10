@@ -1,4 +1,5 @@
 #k-means++ for Clickhouse SQL
+![alt text](https://github.com/[username]/[reponame]/blob/[branch]/image.jpg?raw=true)
 
 some ideas borrowed from https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.109.5005&rep=rep1&type=pdf
 

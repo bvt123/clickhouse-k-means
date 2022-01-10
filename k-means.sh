@@ -8,7 +8,7 @@ ch() {
 ch  "truncate table WCR"
 ch  "insert into WCR select now(), 1, Y, [] from YH limit $((1 + $RANDOM % 100)),1"
 # add random-weighted centroids 
-for j in {2..3}; do
+for j in {2..4}; do
 ch  "
 insert into WCR
 select now(), (select j from WCR order by ts desc limit 1)+1 as j, y, []
