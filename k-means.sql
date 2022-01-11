@@ -54,9 +54,9 @@ GROUP BY j;
 
 create or replace view deltaFinish as
 select sum(d) as d from
-    ( with groupArray(C) as l
+    ( with groupArray(2)(C) as l
       select j, L2Distance(l[1], l[2]) as d
-      from (select * from WCR order by ts desc limit 2 by j)
+      from (select * from WCR order by ts desc )
       group by j
     );
 
