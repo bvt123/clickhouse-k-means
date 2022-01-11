@@ -8,64 +8,64 @@ create or replace view YH as select i, (toInt32(x),toInt32(y)) as Y from sourceD
 
 -- Centroids and Clusters
 drop table WCR;
---create table WCR ( ts DateTime, j Int32, C Array(Int32), P Array(Int32) ) engine = MergeTree order by ts;
-create table WCR ( ts DateTime, j Int32, C Tuple(Int32,Int32), P Array(Int32) ) engine = MergeTree order by ts;
-insert into WCR select now(), rowNumberInAllBlocks()+1, Y  , [] from YH limit 40,1;
+create table WCR ( ts DateTime, j Int32, C Tuple(Int32,Int32) ) engine = MergeTree order by ts;
+insert into WCR select now(), rowNumberInAllBlocks()+1, Y from YH limit 40,1; -- first centroid
+insert into WCR select * from centroidsInit;                                     -- next centroid
 
 -- random centroids initialization as k-means++ algo
-insert into WCR
-select now(), (select j from WCR order by ts desc limit 1)+1 as j, y, []
-from ( select y,
+create or replace view centroidsInit as
+select now(), (select j from WCR order by ts desc limit 1)+1 as j, y
+from (
+         select y,
          sum(d) over () as total,
          sum(d) over (rows between unbounded preceding and current row ) as cum
-         from (  select argMin(Y, L2Distance(Y,C) as dx2) as y, min(dx2) as d
-                 from YH, (select * from WCR order by ts desc limit 1 by j) as WCR
+         from (
+                 select argMin(Y, L2Distance(Y,C) as dx2) as y, min(dx2) as d
+                 from YH
+                 cross join (select * from WCR order by ts desc limit 1 by j) as WCR
                  where Y not in (select C from WCR)
-                 group by Y)) as t1,
-     ( select rand32()/4294967295 as r ) as t2
-where total*r < cum
+                 group by Y
+              )
+     )
+where total * (select rand32()/4294967295) < cum
 order by cum
 limit 1;
 
--- k-means. recalculate centroids and produce groups of PK of original data. should run several times to get better approximations
-INSERT INTO WCR SELECT
-    now(),
-    j,
-    tuple(COLUMNS('tupleElement') APPLY avg) AS C,
-    groupArray(i)
-FROM
-(
-    WITH ( SELECT  groupArray(j), groupArray(C) FROM WCR  WHERE ts = ( SELECT max(ts) FROM WCR) ) AS jC
-    SELECT
-        untuple(Y),
-        i,
+create or replace view nearestCentroid as
+WITH --( SELECT  groupArray(j), groupArray(C) FROM WCR  WHERE ts = ( SELECT max(ts) FROM WCR) ) AS jC          -- for big datasets
+     ( SELECT  groupArray(j), groupArray(C) FROM (select j,C from WCR  order by ts desc limit 1 by j) ) AS jC  -- for small datasets when 1 epoch takes less 1 sec
+SELECT  untuple(Y), i,
         arraySort((j, C) -> L2Distance(C, Y), jC.1, jC.2)[1] AS j
-    FROM YH
-)
-GROUP BY j
-;
+FROM YH;
+
+-- recalculate centroids
+INSERT INTO WCR SELECT
+    now(),  j,
+    tuple(COLUMNS('tupleElement') APPLY avg) AS C
+FROM nearestCentroid
+GROUP BY j;
 /*
  для тех кто офигевает от синтаксиса КХ, поясняю:
  - untuple(Y) - развертывает тапл в простой список, как будто это отдельные столбцы.  Имена придумываются и содержат слово tupleElement
  - COLUMNS('tupleElement') - берет столбцы по regex
  - APPLY avg - применяет к ним аггрегатрую функцию
- - tuple() полученный список отдельных столбцов снова сворачивается в тупл
-
- arrayZip(groupArray(j), groupArray(C)) - против бага - https://github.com/ClickHouse/ClickHouse/issues/33156
- global cross join - чтобы работало на кластере Distributed
+ - tuple() полученный список отдельных столбцов снова сворачивается в тапл
  */
 
-create or replace function getWCR as (x) ->  (select arrayJoin(P) from (select P from WCR where j=x order by ts  desc limit 1));
+create or replace view deltaFinish as
+select sum(d) as d from
+    ( with groupArray(C) as l
+      select j, L2Distance(l[1], l[2]) as d
+      from (select * from WCR order by ts desc limit 2 by j)
+      group by j
+    );
+
 -- results for drawing
-select * from
-(select Y.1 as x, Y.2 p1, null p2, null p3, null p4, null p5 from YH where i in getWCR(1)
-union all
-select Y.1 as x, null p1, Y.2 p2, null p3, null p4, null p5 from YH where i in getWCR(2)
-union all
-select Y.1 as x, null p1, null p2, Y.2 p3, null p4, null p5 from YH where i in getWCR(3)
-union all
-select Y.1 as x, null p1, null p2, null p3, Y.2 p4, null p5 from YH where i in getWCR(4)
-union all
-select Y.1 as x, null p1, null p2, null p3, null p4, Y.2 p5 from YH where i in getWCR(5))
-order by x
-;
+with tuple(COLUMNS('tupleElement')) as a
+select a.1 as x,
+       if(j=1,a.2,null) as p1,
+       if(j=2,a.2,null) as p2,
+       if(j=3,a.2,null) as p3,
+       if(j=4,a.2,null) as p4,
+       if(j=5,a.2,null) as p5
+from nearestCentroid;
