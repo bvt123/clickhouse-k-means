@@ -36,14 +36,18 @@
 - тип координат может быть любой числовой. По умолчанию Int32, можно заменить на Float. Указывается в исходном view YH, и в результирующей таблице WCR. В ней же надо указать количество измерений для Y 
 - количество кластеров данных определяется начальным количеством центроидов.  Задается в bash скрипте.
 
+## выбор оптимального K
+ - статистика для локтя и силуэта - https://www.helenkapatsa.ru/mietod-k-sriednikh/
+ - https://medium.com/analytics-vidhya/how-to-determine-the-optimal-k-for-k-means-708505d204eb
+ - пара запросов для вычисления необходимых метрик есть в OptimalK.sql
+ - строим графики, смотрим глазами, выбираем лучшее
+
 ## Результат
 
 В таблице WCR  есть строка для каждого шага алгоритма и каждого центроида, с указанием таймстемпа.  Для получения кластеров нужен ещё один полный проход по данным, с вычислением ближайшего центроида к каждой точке. Можно джойнить с исходными данными по ключу. Мой вариант для визуализации - в конце sql&bash файлов. 
 
 ## todo
 
-- статистика для локтя и силуэта - https://www.helenkapatsa.ru/mietod-k-sriednikh/
 - считать не только центроиды (means), но и weights and variances 
 - Sufficient Statistics
 - https://www.researchgate.net/publication/267202484_Fast_K-Means_Clustering_for_Very_Large_Datasets_Based_onMapReduce_Combined_with_a_New_Cutting_Method_httplinkspringercomchapter1010072F978-3-319-11680-8_23
-
