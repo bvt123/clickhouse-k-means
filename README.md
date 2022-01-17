@@ -42,6 +42,7 @@
 
 ## todo
 
+- статистика для локтя и силуэта - https://www.helenkapatsa.ru/mietod-k-sriednikh/
 - считать не только центроиды (means), но и weights and variances 
 - Sufficient Statistics
 - https://www.researchgate.net/publication/267202484_Fast_K-Means_Clustering_for_Very_Large_Datasets_Based_onMapReduce_Combined_with_a_New_Cutting_Method_httplinkspringercomchapter1010072F978-3-319-11680-8_23
