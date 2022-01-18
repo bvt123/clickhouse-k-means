@@ -1,14 +1,14 @@
 -- test data
-drop table sourceData; create table sourceData (i UInt32, x Int32, y Int32) engine = Memory;
+drop table sourceData; create table sourceData (i UInt32, x Float64, y Float64) engine = Memory;
 insert into sourceData select number, rand32()%100, rand64()%100 from numbers(4);
-insert into sourceData select number+4+i*50 as i,x+rand64()%30,y+rand()%30 from sourceData as t1,numbers(50) as t2;
+insert into sourceData select number+4+i*500 as i,x+rand64()%3000/100,y+rand()%3000/100 from sourceData as t1,numbers(50) as t2;
 
 -- interface to sourceData
-create or replace view YH as select i, (toInt32(x),toInt32(y)) as Y from sourceData;
+create or replace view YH as select i, (x,y) as Y from sourceData;
 
 -- Centroids and Clusters
 drop table WCR;
-create table WCR ( step UInt32, j Int32, C Tuple(Int32,Int32) ) engine = MergeTree order by step;
+create table WCR ( step UInt32, j Int32, C Tuple(Float64,Float64) ) engine = MergeTree order by step;
 insert into WCR select 0, rowNumberInAllBlocks()+1, Y from YH limit 40,1; -- first centroid
 insert into WCR select * from centroidsInit;                                     -- next centroid
 
@@ -47,7 +47,7 @@ GROUP BY j, step;
 
 -- критерий остановки
 create or replace view deltaFinish as
-select sum(d) as d from
+select sum(d)*10 as d from
     ( with groupArray(2)(C) as l
       select j, L2Distance(l[1], l[2]) as d
       from (select * from WCR order by step desc limit 2 by step)
