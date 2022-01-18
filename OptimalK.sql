@@ -13,8 +13,8 @@ WITH ( SELECT  groupArray(j), groupArray(C) FROM (select j,C from WCR  order by 
     , arraySort((j, C) -> L2Distance(C, b.Y), jC.1, jC.2)[1] AS jb
     , L2Distance(a.Y, b.Y) as distance
 select
-    sumIf(distance, ja = jb) as ai,
-    sumIf(distance, ja != jb) as bi,
+    avgIf(distance, ja = jb) as ai,
+    avgIf(distance, ja != jb) as bi,
     (bi-ai)/if(bi>ai,bi,ai) as si
 FROM YH a, YH b
 where a.i != b.i
