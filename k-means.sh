@@ -6,7 +6,7 @@ ch() {
 
 # init centroids
 ch  "truncate table WCR"
-ch  "insert into WCR select now(), 1, Y from YH limit $((1 + $RANDOM % 100)),1"
+ch  "insert into WCR select 0, 1, Y from YH limit $((1 + $RANDOM % 100)),1"
 # add random-weighted centroids 
 for j in {2..4}; do
 ch  "insert into WCR select * from centroidsInit"
@@ -19,13 +19,13 @@ while [ $rezult -ne 0 ] ; do
 
 ch  "
 INSERT INTO WCR SELECT
-    now(),  j,
+    step,  j,
     tuple(COLUMNS('tupleElement') APPLY avg) AS C
 FROM nearestCentroid
-GROUP BY j
+GROUP BY j, step
 "
 
-ch "select C from WCR order by ts desc limit 1 by j"
+ch "select C from WCR order by step desc limit 1 by j"
 echo .
 
 rezult=`ch "select round(d) from deltaFinish"`
