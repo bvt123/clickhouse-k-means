@@ -14,7 +14,8 @@ insert into WCR select * from centroidsInit;                                    
 
 -- random centroids initialization as k-means++ algo
 create or replace view centroidsInit as
-select now(), (select j from WCR order by ts desc limit 1)+1 as j, y
+with (select (ts,j) from WCR order by ts desc limit 1) as prev
+select prev.1 as ts, prev.2+1 as j, y
 from (
          select y,
          sum(d) over () as total,
@@ -32,8 +33,7 @@ order by cum
 limit 1;
 
 create or replace view nearestCentroid as
-WITH --( SELECT  groupArray(j), groupArray(C) FROM WCR  WHERE ts = ( SELECT max(ts) FROM WCR) ) AS jC          -- for big datasets
-     ( SELECT  groupArray(j), groupArray(C) FROM (select j,C from WCR  order by ts desc limit 1 by j) ) AS jC  -- for small datasets when 1 epoch takes less 1 sec
+WITH ( SELECT  groupArray(j), groupArray(C) FROM WCR  WHERE ts = ( SELECT max(ts) FROM WCR) ) AS jC
 SELECT  untuple(Y), i,
         arraySort((j, C) -> L2Distance(C, Y), jC.1, jC.2)[1] AS j
 FROM YH;
@@ -44,14 +44,8 @@ INSERT INTO WCR SELECT
     tuple(COLUMNS('tupleElement') APPLY avg) AS C
 FROM nearestCentroid
 GROUP BY j;
-/*
- для тех кто офигевает от синтаксиса КХ, поясняю:
- - untuple(Y) - развертывает тапл в простой список, как будто это отдельные столбцы.  Имена придумываются и содержат слово tupleElement
- - COLUMNS('tupleElement') - берет столбцы по regex
- - APPLY avg - применяет к ним аггрегатрую функцию
- - tuple() полученный список отдельных столбцов снова сворачивается в тапл
- */
 
+-- критерий остановки
 create or replace view deltaFinish as
 select sum(d) as d from
     ( with groupArray(2)(C) as l
