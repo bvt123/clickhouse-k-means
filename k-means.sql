@@ -45,9 +45,10 @@ INSERT INTO WCR SELECT
 FROM nearestCentroid
 GROUP BY j, step;
 
--- критерий остановки
+-- критерий остановки - дистанция между двумя последними позициями центроидов
 create or replace view deltaFinish as
-select sum(d)*10 as d from
+with 10 as one_delta
+select toUInt32(sum(d)*one_delta) as d from
     ( with groupArray(2)(C) as l
       select j, L2Distance(l[1], l[2]) as d
       from (select * from WCR order by step desc limit 2 by step)
