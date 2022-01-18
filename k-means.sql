@@ -1,7 +1,7 @@
 -- test data
 drop table sourceData; create table sourceData (i UInt32, x Float64, y Float64) engine = Memory;
 insert into sourceData select number, rand32()%100, rand64()%100 from numbers(4);
-insert into sourceData select number+4+i*500 as i,x+rand64()%3000/100,y+rand()%3000/100 from sourceData as t1,numbers(50) as t2;
+insert into sourceData select number+4+i*500 as i,x+rand64()%3000/100,y+rand()%5000/100 from sourceData as t1,numbers(500) as t2;
 
 -- interface to sourceData
 create or replace view YH as select i, (x,y) as Y from sourceData;
@@ -47,7 +47,7 @@ GROUP BY j, step;
 
 -- критерий остановки - дистанция между двумя последними позициями центроидов
 create or replace view deltaFinish as
-with 10 as one_delta
+with 100 as one_delta
 select toUInt32(sum(d)*one_delta) as d from
     ( with groupArray(2)(C) as l
       select j, L2Distance(l[1], l[2]) as d
